@@ -1,7 +1,5 @@
 # what is gas
 
-
-
 `Gas` 部分由以下部分组成:
 
 - `Gas Limit & Usage by Txn`: `GasLimit` 和 实际花费的 `Gas` 以及其在 `GasLimit` 中的占比
@@ -26,3 +24,5 @@
 #### more details
 
 https://learnblockchain.cn/article/6914
+
+https://learnblockchain.cn/article/8593
