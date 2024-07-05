@@ -2,22 +2,27 @@
 pragma solidity >=0.8.0;
 
 contract Bank {
-    // admin account
+    /* 
+     admin account
+    */
     address payable public owner;
-    //saving each account address and money
+
+    /* 
+     saving each account address and money
+    */
     mapping(address => uint) public deposits;
-    //saving 3 account of top amount of money
-    struct AccountInfo {
-        address depositor;
-        uint amount;
-    }
-    AccountInfo[3] public topDepositors;
+
+    /*
+     saving 3 account of top amount of money
+    */
+    address[3] public topDepositors;
 
     //some operations only for admin
     modifier onlyAdmin() {
         require(msg.sender == owner, "only for admin");
         _;
     }
+
     //saving admin's EOA address
     constructor() {
         owner = payable(msg.sender);
@@ -49,19 +54,22 @@ contract Bank {
         payable(owner).transfer(amount);
     }
 
+    /*
+      update top 3 depositors
+    */
     function updateTopDepositors(address _depositor, uint _amount) internal {
         for (uint8 i = 0; i < 3; i++) {
-            if (topDepositors[i].amount < _amount) {
+            if (deposits[topDepositors[i]] < _amount) {
                 for (uint8 j = 2; j > i; j--) {
                     topDepositors[j] = topDepositors[j - 1];
                 }
-                topDepositors[i] = AccountInfo(_depositor, _amount);
+                topDepositors[i] = _depositor;
                 break;
             }
         }
     }
 
-    function getTopDepositors() public view returns (AccountInfo[3] memory) {
+    function getTopDepositors() public view returns (address[3] memory) {
         return topDepositors;
     }
 }
