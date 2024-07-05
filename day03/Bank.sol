@@ -31,17 +31,17 @@ contract Bank {
     // get money for depositors and record the amount of money for each users
     function deposit() public payable {
         deposits[msg.sender] += msg.value;
-        updateTopDepositors(msg.sender, msg.value);
+        updateTopDepositors(msg.sender, deposits[msg.sender]);
     }
 
     receive() external payable {
         deposits[msg.sender] += msg.value;
-        updateTopDepositors(msg.sender, msg.value);
+        updateTopDepositors(msg.sender, deposits[msg.sender]);
     }
 
     fallback() external payable {
         deposits[msg.sender] += msg.value;
-        updateTopDepositors(msg.sender, msg.value);
+        updateTopDepositors(msg.sender, deposits[msg.sender]);
     }
 
     function withdraw(uint amount) external onlyAdmin {
