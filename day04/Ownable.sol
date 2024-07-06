@@ -1,33 +1,52 @@
 //SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0;
 
-contract Ownable {
-    address public owner;
+import "./IBank.sol";
 
-    /*
-     *  set owner
-     */
+contract Ownable {
+    event Received(address indexed recipient, uint256 amount);
+    event Withdrawal(address indexed recipient, uint256 amount);
+    event FallbackCalled(address indexed sender, uint256 amount, bytes data);
+
+    address payable public admin;
+
     constructor() {
-        owner = msg.sender;
+        admin = payable(msg.sender);
     }
 
-    /*
-     * @dev modifier
-     */
-    modifier onlyOwner() {
-        require(msg.sender == owner, "not admin");
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "only for admin");
         _;
     }
 
-    /*
-     * @dev set owner
-     */
-    function setOwner(address _newOwner) external onlyOwner {
-        require(_newOwner != address(0), "invalid address");
-        owner = _newOwner;
+    function setAdmin(address _address, address _newAdmin) external onlyAdmin {
+        IBank(_address).setAdmin(_newAdmin);
     }
 
-    function onlyOwnerCanCallThisFunc() external onlyOwner {}
+    function withdraw(address _address, uint amount) external payable {
+        IBank(_address).withdraw(amount);
+        emit Withdrawal(msg.sender, amount);
+    }
 
-    function anyoneCanCallThisFun() external {}
+    function transferToAccount(
+        uint amount,
+        address payable _to
+    ) external onlyAdmin {
+        require(address(this).balance >= amount, "insufficient balance");
+        _to.transfer(amount);
+    }
+
+    function getTopDepositors(
+        address _address
+    ) external view returns (address[3] memory) {
+        return IBank(_address).getTopDepositors();
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
+    }
+
+    fallback() external payable {
+        emit FallbackCalled(msg.sender, msg.value, "function fallback");
+    }
 }
