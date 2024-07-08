@@ -23,7 +23,7 @@ contract Ownable {
         IBank(_address).setAdmin(_newAdmin);
     }
 
-    function withdraw(address _address, uint amount) external payable {
+    function withdraw(address _address, uint amount) external {
         IBank(_address).withdraw(amount);
         emit Withdrawal(msg.sender, amount);
     }
