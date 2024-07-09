@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./BaseERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract Bank {
     address public admin;
 
     mapping(address => uint) public deposits;
 
-    IERC20 public baceERC20;
-
-    constructor(IERC20 iERC20) {
+    constructor() {
         admin = msg.sender;
-
-        baceERC20 = iERC20;
     }
 
     modifier outOfBalance(uint amount) {
@@ -20,13 +17,14 @@ contract Bank {
         _;
     }
 
-    function deposit(uint amount) public {
-        baceERC20.transferFrom(msg.sender, address(this), amount);
+    function deposit(address token, uint amount) public {
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+
         deposits[msg.sender] += amount;
     }
 
-    function withdraw(uint amount) public outOfBalance(amount) {
-        baceERC20.transfer(address(this), amount);
+    function withdraw(address token, uint amount) public outOfBalance(amount) {
+        IERC20(token).transfer(msg.sender, amount);
         deposits[msg.sender] -= amount;
     }
 }
