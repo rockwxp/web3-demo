@@ -39,7 +39,7 @@ contract BaseERC20 {
         _;
     }
 
-    function transferFromAndCallBank(
+    function transferFromAndCall(
         address bank,
         uint256 _amount
     ) public returns (bool) {
