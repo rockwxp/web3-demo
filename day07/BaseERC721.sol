@@ -20,12 +20,18 @@ contract BaseERC721 {
     string private _baseURI;
 
     // Mapping from token ID to owner address
+    // tokenid 和 用户地址之间的关系
+    // 1 --0X11
+    // 2 --0X22
     mapping(uint256 => address) private _owners;
 
     // Mapping owner address to token count
+    // 映射一个用户拥有的数量
+    // 0x11 --> 2
     mapping(address => uint256) private _balances;
 
     // Mapping from token ID to approved address
+    // tokenid 和 地址之间的映射
     mapping(uint256 => address) private _tokenApprovals;
 
     // Mapping from owner to operator approvals
@@ -78,41 +84,38 @@ contract BaseERC721 {
         return
             interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
             interfaceId == 0x80ac58cd || // ERC165 Interface ID for ERC721
-            interfaceId == 0x5b5e139f;   // ERC165 Interface ID for ERC721Metadata
+            interfaceId == 0x5b5e139f; // ERC165 Interface ID for ERC721Metadata
     }
-    
+
     /**
      * @dev See {IERC721Metadata-name}.
      */
     function name() public view returns (string memory) {
-        /**code*/
-
+        return _name;
     }
 
     /**
      * @dev See {IERC721Metadata-symbol}.
      */
     function symbol() public view returns (string memory) {
-        /**code*/
-        
+        return _symbol;
     }
 
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view returns (string memory) {
+        // 应该存在tokenId，不存在就抛出异常
         require(
-            /**code*/,
+            _exists(tokenId),
             "ERC721Metadata: URI query for nonexistent token"
         );
 
-        // should return baseURI
-        /**code*/
+        return _baseURI;
     }
 
     /**
      * @dev Mints `tokenId` and transfers it to `to`.
-     *
      *
      * Requirements:
      *
@@ -122,10 +125,15 @@ contract BaseERC721 {
      * Emits a {Transfer} event.
      */
     function mint(address to, uint256 tokenId) public {
-        require(/**code*/ , "ERC721: mint to the zero address");
-        require(/**code*/, "ERC721: token already minted");
+        require(to != address(0), "ERC721: mint to the zero address");
+        // mint的时候，期望并不存在这个tokenId，如果存在抛出异常
+        require(!_exists(tokenId), "ERC721: token already minted");
 
-        /**code*/
+        // 当前地址的余额 + 1
+        _balances[to] += 1;
+
+        // 当前的tokenid 映射到用户地址上
+        _owners[tokenId] = to;
 
         emit Transfer(address(0), to, tokenId);
     }
@@ -134,29 +142,41 @@ contract BaseERC721 {
      * @dev See {IERC721-balanceOf}.
      */
     function balanceOf(address owner) public view returns (uint256) {
-        /**code*/
+        require(
+            owner != address(0),
+            "ERC721: balance query for the zero address"
+        );
+        // 返回指定地址上的小图片数量
+        return _balances[owner];
     }
 
     /**
      * @dev See {IERC721-ownerOf}.
      */
     function ownerOf(uint256 tokenId) public view returns (address) {
-        /**code*/
+        // 返回的是某个tokenid 属于哪个地址
+        address owner = _owners[tokenId];
+        return owner;
     }
 
     /**
      * @dev See {IERC721-approve}.
      */
     function approve(address to, uint256 tokenId) public {
+        // 取出当前的tokenId的用户地址
         address owner = ownerOf(tokenId);
-        require(/**code*/, "ERC721: approval to current owner");
 
+        // 授权的地址和当前地址不是同一个地址
+        require(to != owner, "ERC721: approval to current owner");
+
+        // tokenid的所有者必须是当前执行合约的人或者owner是msg.sender的被授权人
         require(
-            /**code*/,
+            msg.sender == owner || isApprovedForAll(owner, msg.sender),
             "ERC721: approve caller is not owner nor approved for all"
         );
 
-       _approve(to, tokenId);
+        // 用户批准
+        _approve(to, tokenId);
     }
 
     /**
@@ -164,23 +184,21 @@ contract BaseERC721 {
      */
     function getApproved(uint256 tokenId) public view returns (address) {
         require(
-            /**code*/,
+            _exists(tokenId),
             "ERC721: approved query for nonexistent token"
         );
-
-        /**code*/
+        // 通过tokenId 获取地址
+        return _tokenApprovals[tokenId];
     }
 
     /**
      * @dev See {IERC721-setApprovalForAll}.
      */
     function setApprovalForAll(address operator, bool approved) public {
-        address sender = msg.sender;
-        require(/**code*/, "ERC721: approve to caller");
-        
-        /**code*/
+        require(operator != msg.sender, "ERC721: approve to caller");
 
-        emit ApprovalForAll(sender, operator, approved);
+        _operatorApprovals[msg.sender][operator] = approved;
+        emit ApprovalForAll(msg.sender, operator, approved);
     }
 
     /**
@@ -190,7 +208,7 @@ contract BaseERC721 {
         address owner,
         address operator
     ) public view returns (bool) {
-        /**code*/
+        return _operatorApprovals[owner][operator];
     }
 
     /**
@@ -272,7 +290,7 @@ contract BaseERC721 {
      * and stop existing when they are burned (`_burn`).
      */
     function _exists(uint256 tokenId) internal view returns (bool) {
-        /**code*/
+        return _owners[tokenId] != address(0);
     }
 
     /**
@@ -287,65 +305,44 @@ contract BaseERC721 {
         uint256 tokenId
     ) internal view returns (bool) {
         require(
-            /**code*/,
+            _exists(tokenId),
             "ERC721: operator query for nonexistent token"
         );
 
-        /**code*/
+        address owner = ownerOf(tokenId);
+        return (spender == owner ||
+            getApproved(tokenId) == spender ||
+            isApprovedForAll(owner, spender));
     }
 
-    /**
-     * @dev Transfers `tokenId` from `from` to `to`.
-     *  As opposed to {transferFrom}, this imposes no restrictions on msg.sender.
-     *
-     * Requirements:
-     *
-     * - `to` cannot be the zero address.
-     * - `tokenId` token must be owned by `from`.
-     *
-     * Emits a {Transfer} event.
-     */
     function _transfer(address from, address to, uint256 tokenId) internal {
         require(
-           /**code*/,
+            ownerOf(tokenId) == from,
             "ERC721: transfer from incorrect owner"
         );
+        require(to != address(0), "ERC721: transfer to the zero address");
 
-        require(/**code*/, "ERC721: transfer to the zero address");
+        _approve(address(0), tokenId);
 
-        /**code*/
+        _balances[from] -= 1;
+        _balances[to] += 1;
+        _owners[tokenId] = to;
 
         emit Transfer(from, to, tokenId);
     }
 
-    /**
-     * @dev Approve `to` to operate on `tokenId`
-     *
-     * Emits a {Approval} event.
-     */
-    function _approve(address to, uint256 tokenId) internal virtual {
-        /**code*/
-
+    function _approve(address to, uint256 tokenId) internal {
+        _tokenApprovals[tokenId] = to;
         emit Approval(ownerOf(tokenId), to, tokenId);
     }
 
-    /**
-     * @dev Internal function to invoke {IERC721Receiver-onERC721Received} on a target address.
-     * The call is not executed if the target address is not a contract.
-     *
-     * @param from address representing the previous owner of the given token ID
-     * @param to target address that will receive the tokens
-     * @param tokenId uint256 ID of the token to be transferred
-     * @param _data bytes optional data to send along with the call
-     * @return bool whether the call correctly returned the expected magic value
-     */
     function _checkOnERC721Received(
         address from,
         address to,
         uint256 tokenId,
         bytes memory _data
     ) private returns (bool) {
-        if (to.isContract()) {
+        if (to.code.length > 0) {
             try
                 IERC721Receiver(to).onERC721Received(
                     msg.sender,
@@ -373,8 +370,6 @@ contract BaseERC721 {
 }
 
 contract BaseERC721Receiver is IERC721Receiver {
-    constructor() {}
-
     function onERC721Received(
         address,
         address,
